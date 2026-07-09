@@ -17,10 +17,12 @@ A focused retention case study for a fictional Indian food delivery platform —
 
 ## Tech Stack
 
-- **Python 3.12 · pandas · numpy · Faker** — synthetic data generation
-- **PostgreSQL 18** — analytical query layer
-- **seaborn · matplotlib** — cohort heatmap, Lorenz curve, retention charts
-- **Power BI Desktop** — 3-page executive dashboard
+- **Python 3.12** — synthetic data generation, preprocessing, and analysis.
+- **pandas, numpy, Faker** — data creation and transformation.
+- **PostgreSQL 18** — relational storage and SQL analysis.
+- **SQL** — cohort retention, RFM segmentation, discount analysis, and Pareto analysis.
+- **seaborn, matplotlib** — statistical visualizations and charts.
+- **Power BI Desktop** — executive dashboard and storytelling.
 
 ## Project Structure
 
