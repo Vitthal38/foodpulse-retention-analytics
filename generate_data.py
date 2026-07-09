@@ -97,14 +97,20 @@ def generate_customers():
     city = rng.choice(CITIES, size=n)
     channel = rng.choice(ACQUISITION_CHANNELS, size=n, p=CHANNEL_WEIGHTS)
 
-    # signup_date / cohort_month are filled in later, once each customer's
-    # order dates are known (signup = shortly before their first order)
+    # CHANGE 1: signup_date is drawn uniformly across the full 24-month window,
+    # independent of order_count/loyalty (order_count is assigned later in
+    # assign_order_counts). cohort_month is derived from signup_date.
+    window_days = (END_DATE - START_DATE).days
+    signup_offset_days = rng.integers(0, window_days + 1, size=n)
+    signup_date = START_DATE + pd.to_timedelta(signup_offset_days, unit="D")
+    cohort_month = signup_date.to_period("M").astype(str)  # CHANGE 3
+
     customers_df = pd.DataFrame({
         "customer_id": customer_id,
-        "signup_date": pd.NaT,
+        "signup_date": signup_date.strftime("%Y-%m-%d"),
         "acquisition_channel": channel,
         "city": city,
-        "cohort_month": "",
+        "cohort_month": cohort_month,
     })
 
     # ---- latent traits (internal use only, not exported) ----
@@ -126,6 +132,7 @@ def generate_customers():
 
     latent = pd.DataFrame({
         "customer_id": customer_id,
+        "signup_date": signup_date,
         "base_loyalty": base_loyalty,
         "delay_affinity": delay_affinity,
         "discount_affinity": discount_affinity,
@@ -222,7 +229,19 @@ def build_day_weights():
 
 
 DATES, DAY_WEIGHTS = build_day_weights()
-DAY_PROBS = DAY_WEIGHTS / DAY_WEIGHTS.sum()
+
+
+def sample_forward_dates(start_date: pd.Timestamp, n_dates: int) -> np.ndarray:
+    """Sample n_dates order dates in [start_date, END_DATE], weighted by the
+    same seasonality curve used everywhere else (never looking backward)."""
+    start_idx = DATES.searchsorted(start_date)
+    valid_dates = DATES[start_idx:]
+    valid_weights = DAY_WEIGHTS[start_idx:]
+    if len(valid_dates) == 0:
+        valid_dates = DATES[-1:]
+        valid_weights = DAY_WEIGHTS[-1:]
+    probs = valid_weights / valid_weights.sum()
+    return rng.choice(valid_dates, size=n_dates, replace=True, p=probs)
 
 
 # --------------------------------------------------------------------------
@@ -239,26 +258,38 @@ HOUR_WEIGHTS = HOUR_WEIGHTS / HOUR_WEIGHTS.sum()
 
 
 def generate_orders(customers_df, restaurants_df, latent):
-    order_customer_ids = np.repeat(latent["customer_id"].to_numpy(), latent["order_count"].to_numpy())
-    order_discount_affinity = np.repeat(latent["discount_affinity"].to_numpy(), latent["order_count"].to_numpy())
-    order_spend_multiplier = np.repeat(latent["spend_multiplier"].to_numpy(), latent["order_count"].to_numpy())
-    order_delay_affinity = np.repeat(latent["delay_affinity"].to_numpy(), latent["order_count"].to_numpy())
+    n = len(latent)
+    customer_ids = latent["customer_id"].to_numpy()
+    order_counts = latent["order_count"].to_numpy()
+    signup_dates = pd.DatetimeIndex(latent["signup_date"])
 
-    total_orders = len(order_customer_ids)
+    # CHANGE 2: first order date = signup_date + randint(0, 7) days. Subsequent
+    # orders are generated forward from there (never drawn i.i.d. across the
+    # full window).
+    first_order_offset = rng.integers(0, 8, size=n)  # 0-7 days
+    first_order_date = (signup_dates + pd.to_timedelta(first_order_offset, unit="D")).to_numpy()
 
-    # draw order dates i.i.d. from the global seasonality distribution (weekend +
-    # Jul-Sep uplift baked into DAY_PROBS), then sort chronologically within each
-    # customer. Because draws are i.i.d., every customer segment (incl. one-time
-    # buyers) reproduces the same global seasonal mix - no artificial growth ramp.
-    order_dates = rng.choice(DATES, size=total_orders, replace=True, p=DAY_PROBS)
+    all_customer_id_chunks = []
+    all_date_chunks = []
+    for i in range(n):
+        n_orders = order_counts[i]
+        first_date = pd.Timestamp(first_order_date[i])
+        if n_orders > 1:
+            extra_dates = sample_forward_dates(first_date, n_orders - 1)
+            dates_i = np.sort(np.concatenate([[np.datetime64(first_date)], extra_dates]))
+        else:
+            dates_i = np.array([np.datetime64(first_date)])
+        all_customer_id_chunks.append(np.repeat(customer_ids[i], n_orders))
+        all_date_chunks.append(dates_i)
 
-    tmp = pd.DataFrame({
-        "customer_id": order_customer_ids,
-        "order_date": order_dates,
-        "discount_affinity": order_discount_affinity,
-        "spend_multiplier": order_spend_multiplier,
-        "delay_affinity": order_delay_affinity,
-    }).sort_values(["customer_id", "order_date"], kind="mergesort").reset_index(drop=True)
+    all_customer_ids = np.concatenate(all_customer_id_chunks)
+    all_dates = np.concatenate(all_date_chunks)
+
+    tmp = pd.DataFrame({"customer_id": all_customer_ids, "order_date": all_dates}).merge(
+        latent[["customer_id", "discount_affinity", "spend_multiplier", "delay_affinity"]],
+        on="customer_id", how="left",
+    )
+    tmp = tmp.sort_values(["customer_id", "order_date"], kind="mergesort").reset_index(drop=True)
 
     total_orders = len(tmp)
     order_id = np.array([f"O{i:08d}" for i in range(total_orders)])
@@ -297,25 +328,6 @@ def generate_orders(customers_df, restaurants_df, latent):
     })
 
     return orders_df, helper
-
-
-def finalize_customer_signup(customers_df, orders_df):
-    """Derive signup_date/cohort_month from each customer's first observed order."""
-    first_order = orders_df.groupby("customer_id")["order_date"].min()
-    first_order = pd.to_datetime(first_order)
-    offset_days = rng.integers(0, 11, size=len(first_order))
-    signup_date = first_order - pd.to_timedelta(offset_days, unit="D")
-    signup_date = signup_date.clip(lower=START_DATE)
-
-    customers_df = customers_df.drop(columns=["signup_date", "cohort_month"]).merge(
-        signup_date.rename("signup_date"), left_on="customer_id", right_index=True, how="left"
-    )
-    # customers with no generated orders (should not happen given order_count>=1) fall back to START_DATE
-    customers_df["signup_date"] = customers_df["signup_date"].fillna(START_DATE)
-    customers_df["cohort_month"] = customers_df["signup_date"].dt.to_period("M").astype(str)
-    customers_df["signup_date"] = customers_df["signup_date"].dt.strftime("%Y-%m-%d")
-    customers_df = customers_df[["customer_id", "signup_date", "acquisition_channel", "city", "cohort_month"]]
-    return customers_df
 
 
 # --------------------------------------------------------------------------
@@ -594,11 +606,8 @@ def main():
     print("Assigning repeat-order behavior...")
     latent = assign_order_counts(latent)
 
-    print("Generating orders (dates, seasonality, restaurant assignment)...")
+    print("Generating orders (signup-forward dates, seasonality, restaurant assignment)...")
     orders_df, helper = generate_orders(customers_df, restaurants_df, latent)
-
-    print("Deriving signup dates from first orders...")
-    customers_df = finalize_customer_signup(customers_df, orders_df)
 
     print("Generating order items and order value totals...")
     orders_df, order_items_df = generate_order_items(orders_df, helper)
