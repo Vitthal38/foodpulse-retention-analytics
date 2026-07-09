@@ -1,0 +1,13 @@
+.env
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# regeneratable data (see generate_data.py / analysis/run_queries.py)
+data/raw/
+analysis/results/
+
+# local Claude Code settings
+.claude/settings.local.json
+.claude/scheduled_tasks.lock

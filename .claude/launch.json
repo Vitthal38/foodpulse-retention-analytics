@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "rag-chatbot",
+      "runtimeExecutable": "C:\\Data Analyst Projects\\rag-chatbot\\venv\\Scripts\\streamlit.exe",
+      "runtimeArgs": ["run", "C:\\Data Analyst Projects\\rag-chatbot\\ui\\app.py"],
+      "port": 8501
+    }
+  ]
+}
