@@ -36,7 +36,9 @@ foodpulseretention-analytics/
 │   │   ├── queries.sql       # the 5 core analyses (see below)
 │   │   └── views.sql         # 3 Power BI-facing views
 │   ├── run_queries.py        # executes queries.sql and saves results to analysis/results/
-│   └── results/              # query outputs — gitignored, regenerated on run
+│   ├── results/               # query outputs — gitignored, regenerated on run
+│   ├── visualisations.py     # builds the 4 charts below from analysis/results/
+│   └── charts/                # chart PNGs — tracked in git
 ├── data/
 │   └── raw/                  # synthetic CSVs — gitignored, regenerated on run
 ├── .env.example               # PostgreSQL connection template
@@ -50,7 +52,8 @@ foodpulseretention-analytics/
 Step 1: python generate_data.py
 Step 2: python pipeline/load_postgres.py
 Step 3: python analysis/run_queries.py
-Step 4: Open the Power BI file (coming soon)
+Step 4: python analysis/visualisations.py
+Step 5: Open the Power BI file (coming soon)
 ```
 
 Copy `.env.example` to `.env` and fill in your local PostgreSQL credentials before running Step 2.
@@ -66,6 +69,16 @@ Copy `.env.example` to `.env` and fill in your local PostgreSQL credentials befo
 **Discount dependency vs LTV.** Customers are classified by the share of their orders that carried a discount — Never, Light (1–30%), Moderate (31–60%), and Heavy (60%+) — and compared on total orders, net spend, and retention. Heavy discount users show lower spend and weaker retention than light or non-discount users, indicating that discount-driven acquisition is attracting price-sensitive, low-loyalty customers rather than building repeat demand.
 
 **Revenue concentration (Pareto).** Customers are ranked by total net spend and their cumulative share of GMV is tracked down the ranked list. The result is a textbook power-law curve: roughly 9.7% of customers account for half of all revenue, and 22.4% account for 80%. This reframes retention from a broad, undifferentiated problem into a narrower question of protecting a specific, identifiable group of high-value customers.
+
+## Charts
+
+![Cohort Retention Heatmap](analysis/charts/cohort_retention_heatmap.png)
+
+![Delivery Delay vs Churn](analysis/charts/delivery_delay_churn.png)
+
+![Revenue Lorenz Curve](analysis/charts/revenue_lorenz_curve.png)
+
+![RFM Segments](analysis/charts/rfm_segments.png)
 
 ## Key Business Recommendations
 
