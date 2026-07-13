@@ -1,0 +1,6 @@
+delay_bucket,customer_count,retained_count,retention_pct
+0-10 min,27635,10231,37.02
+10-20 min,9181,2868,31.24
+20-35 min,6508,1713,26.32
+35-50 min,2820,663,23.51
+50+ min,2578,480,18.62

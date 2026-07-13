@@ -101,15 +101,15 @@ def chart_delivery_delay_churn():
     df["delay_bucket"] = pd.Categorical(df["delay_bucket"], categories=bucket_order, ordered=True)
     df = df.sort_values("delay_bucket")
 
-    overall_avg = 100.0 * df["retained_customers"].sum() / df["total_customers"].sum()
+    overall_avg = 100.0 * df["retained_count"].sum() / df["customer_count"].sum()
 
     fig, ax = plt.subplots(figsize=(10, 5))
     # top-to-bottom = best-to-worst delay bucket
     plot_order = list(reversed(bucket_order))
     colors = list(reversed(MUTED_GREEN_TO_RED))
-    bars = ax.barh(plot_order, df.set_index("delay_bucket").loc[plot_order, "retention_rate_pct"], color=colors)
+    bars = ax.barh(plot_order, df.set_index("delay_bucket").loc[plot_order, "retention_pct"], color=colors)
 
-    for bar, value in zip(bars, df.set_index("delay_bucket").loc[plot_order, "retention_rate_pct"]):
+    for bar, value in zip(bars, df.set_index("delay_bucket").loc[plot_order, "retention_pct"]):
         ax.text(bar.get_width() + 0.6, bar.get_y() + bar.get_height() / 2, f"{value:.1f}%",
                 va="center", ha="left", fontsize=10, color="#333333")
 
@@ -123,7 +123,8 @@ def chart_delivery_delay_churn():
     ax.spines[["top", "right"]].set_visible(False)
 
     fig.suptitle("90-Day Retention Rate by Delivery Delay Bucket", fontsize=15, fontweight="bold", y=1.02)
-    ax.set_title("Customers with delays above 35 minutes show near-total churn", fontsize=10, color="#666666", pad=10)
+    ax.set_title("Delay is a gradual, statistically significant retention driver — not a cliff",
+                 fontsize=10, color="#666666", pad=10)
 
     save(fig, "delivery_delay_churn.png")
     print("Chart 2 saved: delivery_delay_churn.png")

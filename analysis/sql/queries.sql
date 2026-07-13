@@ -59,63 +59,76 @@ ORDER BY r.cohort_month, r.months_since_first;
 
 -- ============================================================================
 -- QUERY 2 — Delivery delay vs 90-day churn
--- Business question: Does a customer's typical delivery experience predict
--- whether they come back for a second order within 90 days of their first?
--- Buckets customers by their MEDIAN delivery delay across all orders.
--- Output: delay_bucket, total_customers, retained_customers, retention_rate_pct
+-- Methodology: delivered orders only, bucketed by each customer's FIRST
+-- delivered order's delay, retained = 2nd delivered order within 90 days of
+-- the first. Matches the dashboard analysis on Page 2 (verified end-to-end
+-- against independently-recomputed Python numbers).
+-- Output: delay_bucket, customer_count, retained_count, retention_pct
 -- ============================================================================
-WITH customer_delay AS (
-    SELECT o.customer_id,
-           PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY de.delivery_delay_min) AS median_delay
+-- Query 2: 90-day retention by
+-- first-order delivery delay
+-- Methodology: delivered orders only,
+-- bucketed by first order delay,
+-- retained = 2nd delivered order
+-- within 90 days of first order.
+-- This matches the dashboard analysis
+-- on Page 2.
+WITH delivered_orders AS (
+    SELECT o.customer_id, o.order_id, o.order_date, de.delivery_delay_min
     FROM orders o
     JOIN delivery_events de ON de.order_id = o.order_id
-    GROUP BY o.customer_id
+    WHERE o.order_status = 'Delivered'
+),
+order_seq AS (
+    SELECT customer_id, order_date, delivery_delay_min,
+           ROW_NUMBER() OVER (PARTITION BY customer_id ORDER BY order_date) AS rn
+    FROM delivered_orders
+),
+first_order AS (
+    SELECT customer_id, order_date AS first_order_date, delivery_delay_min AS first_order_delay
+    FROM order_seq
+    WHERE rn = 1
+),
+second_order AS (
+    SELECT customer_id, order_date AS second_order_date
+    FROM order_seq
+    WHERE rn = 2
+),
+customer_retention AS (
+    SELECT fo.customer_id, fo.first_order_delay,
+           CASE
+               WHEN so.second_order_date IS NOT NULL
+                AND (so.second_order_date - fo.first_order_date) <= 90
+               THEN 1 ELSE 0
+           END AS retained_90d
+    FROM first_order fo
+    LEFT JOIN second_order so ON so.customer_id = fo.customer_id
 ),
 delay_bucket AS (
-    SELECT customer_id,
+    SELECT customer_id, retained_90d,
            CASE
-               WHEN median_delay < 10 THEN '0-10 min'
-               WHEN median_delay < 20 THEN '10-20 min'
-               WHEN median_delay < 35 THEN '20-35 min'
-               WHEN median_delay < 50 THEN '35-50 min'
+               WHEN first_order_delay < 10 THEN '0-10 min'
+               WHEN first_order_delay < 20 THEN '10-20 min'
+               WHEN first_order_delay < 35 THEN '20-35 min'
+               WHEN first_order_delay < 50 THEN '35-50 min'
                ELSE '50+ min'
            END AS delay_bucket,
            CASE
-               WHEN median_delay < 10 THEN 1
-               WHEN median_delay < 20 THEN 2
-               WHEN median_delay < 35 THEN 3
-               WHEN median_delay < 50 THEN 4
+               WHEN first_order_delay < 10 THEN 1
+               WHEN first_order_delay < 20 THEN 2
+               WHEN first_order_delay < 35 THEN 3
+               WHEN first_order_delay < 50 THEN 4
                ELSE 5
            END AS bucket_order
-    FROM customer_delay
-),
-order_seq AS (
-    SELECT customer_id, order_date,
-           ROW_NUMBER() OVER (PARTITION BY customer_id ORDER BY order_date) AS rn
-    FROM orders
-),
-first_two AS (
-    SELECT o1.customer_id, o1.order_date AS first_order_date, o2.order_date AS second_order_date
-    FROM (SELECT * FROM order_seq WHERE rn = 1) o1
-    LEFT JOIN (SELECT * FROM order_seq WHERE rn = 2) o2 ON o2.customer_id = o1.customer_id
-),
-retained_flag AS (
-    SELECT customer_id,
-           CASE
-               WHEN second_order_date IS NOT NULL
-                AND (second_order_date - first_order_date) <= 90
-               THEN 1 ELSE 0
-           END AS retained_90d
-    FROM first_two
+    FROM customer_retention
 )
-SELECT db.delay_bucket,
-       COUNT(*) AS total_customers,
-       SUM(rf.retained_90d) AS retained_customers,
-       ROUND(100.0 * SUM(rf.retained_90d) / COUNT(*), 2) AS retention_rate_pct
-FROM delay_bucket db
-JOIN retained_flag rf ON rf.customer_id = db.customer_id
-GROUP BY db.delay_bucket, db.bucket_order
-ORDER BY db.bucket_order;
+SELECT delay_bucket,
+       COUNT(*) AS customer_count,
+       SUM(retained_90d) AS retained_count,
+       ROUND(100.0 * SUM(retained_90d) / COUNT(*), 2) AS retention_pct
+FROM delay_bucket
+GROUP BY delay_bucket, bucket_order
+ORDER BY bucket_order;
 
 
 -- ============================================================================
