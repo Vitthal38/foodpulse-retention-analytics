@@ -145,17 +145,18 @@ def chart_revenue_lorenz_curve():
     fig, ax = plt.subplots(figsize=(8, 8))
 
     ax.plot([0, 100], [0, 100], linestyle="--", color=LIGHT_GREY, linewidth=1.5, label="Perfect equality")
-    ax.plot(x, y, color=DARK_BLUE, linewidth=2.2, label="Actual revenue share")
-    ax.fill_between(x, x, y, where=(y >= x), color="#A9C6E8", alpha=0.35, interpolate=True)
+    ax.plot(x, y, color="#E63946", linewidth=2.5, label="Actual revenue share")
+    ax.fill_between(x, x, y, where=(y >= x), color="#F9DED4", alpha=0.9, interpolate=True)
 
     # milestone markers, pulled from the query's own milestone rows (not hardcoded) —
-    # only the 50% and 80% call-outs are annotated, per spec
+    # only the 50% and 80% call-outs are annotated, per spec. Dots use the darker
+    # #C1121F (not the curve's #E63946) so they stay visible sitting on the curve.
     for _, row in milestones.iterrows():
         target_pct = row["cumulative_gmv_pct"]
         if target_pct not in (50, 80):
             continue
         cx, cy = row["cumulative_customer_pct"], target_pct
-        ax.scatter([cx], [cy], color="#A6423B", zorder=5, s=45)
+        ax.scatter([cx], [cy], color="#C1121F", zorder=5, s=55)
         label = f"Top {cx:.1f}% → {int(cy)}% of GMV"
         ax.annotate(
             label, xy=(cx, cy), xytext=(cx + 12, cy - 12),
@@ -172,7 +173,7 @@ def chart_revenue_lorenz_curve():
     ax.legend(loc="lower right", frameon=False, fontsize=9)
 
     fig.suptitle("Revenue Concentration — Lorenz Curve", fontsize=15, fontweight="bold", y=0.97)
-    ax.set_title("A small customer segment drives the majority of revenue", fontsize=10, color="#666666", pad=10)
+    ax.set_title("Revenue is highly concentrated among a small share of customers", fontsize=10, color="#666666", pad=10)
 
     save(fig, "revenue_lorenz_curve.png")
     print("Chart 3 saved: revenue_lorenz_curve.png")
