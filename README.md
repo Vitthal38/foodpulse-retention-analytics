@@ -21,8 +21,8 @@ A focused retention case study for a fictional Indian food delivery platform —
 
 ## Key Findings
 
-- **65.3% of customers never place a second order, and overall 90-day retention sits at just 32.65% (67.4% churn).** One-time buyers are the dominant lifecycle pattern on the platform, not the exception.
-- **Delivery delay is a real, statistically significant retention driver — but a gradual decline, not a cliff.** Retention falls steadily from 37.0% in the 0–10 minute bucket to roughly 18% in the 50+ minute bucket — meaningful, but far from the near-total collapse an earlier draft of this analysis assumed.
+- **65.3% of customers never place a second order, and overall 90-day retention (right-censored — excluding customers whose 90-day window hasn't fully elapsed yet) sits at 35.5% (64.5% churn).** One-time buyers are the dominant lifecycle pattern on the platform, not the exception.
+- **Delivery delay is a real, statistically significant retention driver — but a gradual decline, not a cliff.** Retention falls steadily from 39.9% in the 0–10 minute bucket to roughly 20.5% in the 50+ minute bucket — meaningful, but far from the near-total collapse an earlier draft of this analysis assumed.
 - **Revenue is heavily concentrated.** The top **~9.9%** of customers by spend drive **50%** of GMV, and the top **~22.9%** drive **80%** — a small customer base carries most of the business.
 - **Discount dependency correlates with lower value, not higher.** Heavy discount users show lower total spend and weaker retention than customers who use discounts lightly or not at all — discounting is not a reliable path to loyalty on its own.
 
@@ -73,9 +73,9 @@ Copy `.env.example` to `.env` and fill in your local PostgreSQL credentials befo
 
 **Cohort retention analysis.** Customers are grouped into monthly acquisition cohorts and tracked at 0, 1, 2, 3, 6, 9, and 12 months after their first order. This is the clearest lens on the platform's core problem: the steep drop after month 0 is driven by the 65.3% of customers who never return, making early-lifecycle retention — not later-stage loyalty — the primary lever available to the business.
 
-**Delivery delay vs churn threshold.** Customers are bucketed by their median delivery delay across all orders (0–10, 10–20, 20–35, 35–50, and 50+ minutes), then measured on whether they returned for a second order within 90 days. Retention declines in a clear, monotonic step down as delay increases — from 37.0% in the best bucket to roughly 18% in the worst — a gradual decline, not a cliff. This turns delivery performance from an operations metric into a quantified retention risk.
+**Delivery delay vs churn threshold.** Customers are bucketed by their first order's delivery delay (0–10, 10–20, 20–35, 35–50, and 50+ minutes), then measured on whether they placed a 2nd delivered order within 90 days — customers whose 90-day window hasn't fully elapsed yet are excluded rather than counted as churned. Retention declines in a clear, monotonic step down as delay increases — from 39.9% in the best bucket to roughly 20.5% in the worst — a gradual decline, not a cliff. This turns delivery performance from an operations metric into a quantified retention risk.
 
-**RFM segmentation.** Every customer is scored on Recency, Frequency, and Monetary value using quartile ranks (NTILE 4), then rolled up into five segments: Champion, Loyal, At Risk, About to Lapse, and Lost. This segmentation is the mechanism for turning the cohort and delay findings into an actionable, customer-level target list rather than an aggregate statistic.
+**RFM segmentation.** Every customer is scored on Recency, Frequency, and Monetary value (NTILE 4 quartile ranks are computed and retained as reference columns), then assigned to one of five segments — Champion, Loyal, At Risk, About to Lapse, and Lost — using fixed thresholds rather than the quartile ranks directly (e.g. Champion = a delivered order within the last 30 days and at least 5 lifetime orders). This segmentation is the mechanism for turning the cohort and delay findings into an actionable, customer-level target list rather than an aggregate statistic.
 
 **Discount dependency vs LTV.** Customers are classified by the share of their orders that carried a discount — Never, Light (1–30%), Moderate (31–60%), and Heavy (60%+) — and compared on total orders, net spend, and retention. Heavy discount users show lower spend and weaker retention than light or non-discount users, indicating that discount-driven acquisition is attracting price-sensitive, low-loyalty customers rather than building repeat demand.
 
@@ -93,7 +93,7 @@ Copy `.env.example` to `.env` and fill in your local PostgreSQL credentials befo
 
 ## Key Business Recommendations
 
-**1. Treat delivery delay as a churn-prevention lever, not just an ops metric.** Customers experiencing delivery delays that push them into the 50+ minute bucket retain at roughly 18%, versus 37.0% in the 0–10 minute bucket — a real, gradual decline, not a cliff — so the operational target is keeping median delivery delay inside that lowest band, and treating any customer drifting past it as an early-warning candidate for proactive service recovery (credits, priority dispatch) before they lapse.
+**1. Treat delivery delay as a churn-prevention lever, not just an ops metric.** Customers experiencing delivery delays that push them into the 50+ minute bucket retain at roughly 20.5%, versus 39.9% in the 0–10 minute bucket — a real, gradual decline, not a cliff — so the operational target is keeping median delivery delay inside that lowest band, and treating any customer drifting past it as an early-warning candidate for proactive service recovery (credits, priority dispatch) before they lapse.
 
 **2. Build a key-account motion around the top ~10% of customers.** Since roughly 9.9% of customers already generate half of all GMV, losing even a small fraction of this group is a disproportionately large revenue event — this segment should be tracked and protected with dedicated retention treatment (priority support, loyalty perks) rather than folded into generic, platform-wide campaigns.
 
