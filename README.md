@@ -21,7 +21,7 @@ A focused retention case study for a fictional Indian food delivery platform —
 
 ## Key Findings
 
-- **65.3% of customers never place a second order, and overall 90-day retention (right-censored — excluding customers whose 90-day window hasn't fully elapsed yet) sits at 35.5% (64.5% churn).** One-time buyers are the dominant lifecycle pattern on the platform, not the exception.
+- **65.3% of customers never place a second order, and overall 90-day retention (right-censored — excluding customers whose 90-day window hasn't fully elapsed yet) sits at 35.44% (64.6% churn).** One-time buyers are the dominant lifecycle pattern on the platform, not the exception.
 - **Delivery delay is a real, statistically significant retention driver — but a gradual decline, not a cliff.** Retention falls steadily from 39.9% in the 0–10 minute bucket to roughly 20.5% in the 50+ minute bucket — meaningful, but far from the near-total collapse an earlier draft of this analysis assumed.
 - **Revenue is heavily concentrated.** The top **~9.9%** of customers by spend drive **50%** of GMV, and the top **~22.9%** drive **80%** — a small customer base carries most of the business.
 - **Discount dependency correlates with lower value, not higher.** Heavy discount users show lower total spend and weaker retention than customers who use discounts lightly or not at all — discounting is not a reliable path to loyalty on its own.
