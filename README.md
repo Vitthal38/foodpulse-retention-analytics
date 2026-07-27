@@ -2,6 +2,17 @@
 
 A focused retention case study for a fictional Indian food delivery platform — built to answer: why do customers stop ordering, what revenue is at risk, and which lever should the business pull first?
 
+## Dashboard
+
+### Executive Summary
+![Executive Summary](dashboard/screenshots/page1_executive_summary.png)
+
+### Retention & Churn Analysis
+![Retention & Churn](dashboard/screenshots/page2_retention_churn.png)
+
+### Segment Intelligence
+![Segment Intelligence](dashboard/screenshots/page3_segment_intelligence.png)
+
 ## Business Questions
 
 - Why do customers stop ordering after their first (or an early) order?
