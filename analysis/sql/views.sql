@@ -106,9 +106,14 @@ rfm AS (
            (SELECT snapshot_date FROM snapshot) - co.last_order_date AS recency_days,
            co.total_orders AS frequency,
            co.total_spend AS monetary,
-           NTILE(4) OVER (ORDER BY (SELECT snapshot_date FROM snapshot) - co.last_order_date DESC) AS r_score,
-           NTILE(4) OVER (ORDER BY co.total_orders ASC) AS f_score,
-           NTILE(4) OVER (ORDER BY co.total_spend ASC) AS m_score
+           -- customer_id appended as a deterministic tie-breaker: total_orders and
+           -- total_spend both have large tie clusters (e.g. one-time buyers all
+           -- share total_orders=1), and NTILE() has no guaranteed behavior for tied
+           -- rows without one -- without this, bucket boundaries (and therefore
+           -- rfm_segment/Champion counts) could drift between query executions.
+           NTILE(4) OVER (ORDER BY (SELECT snapshot_date FROM snapshot) - co.last_order_date DESC, co.customer_id) AS r_score,
+           NTILE(4) OVER (ORDER BY co.total_orders ASC, co.customer_id) AS f_score,
+           NTILE(4) OVER (ORDER BY co.total_spend ASC, co.customer_id) AS m_score
     FROM customer_orders co
 ),
 profile AS (
