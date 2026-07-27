@@ -165,10 +165,12 @@ customer_rfm AS (
     GROUP BY o.customer_id
 ),
 scored AS (
+    -- customer_id appended as a deterministic tie-breaker -- see the same
+    -- fix in views.sql's v_customer_segments for why this is required.
     SELECT customer_id, recency_days, frequency, monetary,
-           NTILE(4) OVER (ORDER BY recency_days DESC) AS r_score,
-           NTILE(4) OVER (ORDER BY frequency ASC)     AS f_score,
-           NTILE(4) OVER (ORDER BY monetary ASC)      AS m_score
+           NTILE(4) OVER (ORDER BY recency_days DESC, customer_id) AS r_score,
+           NTILE(4) OVER (ORDER BY frequency ASC, customer_id)     AS f_score,
+           NTILE(4) OVER (ORDER BY monetary ASC, customer_id)      AS m_score
     FROM customer_rfm
 )
 SELECT customer_id,
