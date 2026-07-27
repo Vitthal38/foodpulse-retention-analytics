@@ -18,6 +18,7 @@ CREATE OR REPLACE VIEW v_cohort_retention AS
 WITH first_order AS (
     SELECT customer_id, MIN(order_date) AS first_order_date
     FROM orders
+    WHERE order_status = 'Delivered'
     GROUP BY customer_id
 ),
 cohort AS (
@@ -36,6 +37,7 @@ order_activity AS (
            + (DATE_PART('month', o.order_date) - DATE_PART('month', coh.first_order_date)) AS months_since_first
     FROM orders o
     JOIN cohort coh ON coh.customer_id = o.customer_id
+    WHERE o.order_status = 'Delivered'
 ),
 target_months AS (
     SELECT unnest(ARRAY[0, 1, 2, 3, 6, 9, 12]) AS months_since_first
@@ -87,18 +89,21 @@ customer_orders AS (
            MIN(o.order_date) AS first_order_date,
            MAX(o.order_date) AS last_order_date
     FROM orders o
+    WHERE o.order_status = 'Delivered'
     GROUP BY o.customer_id
 ),
 customer_delay AS (
     SELECT o.customer_id, AVG(de.delivery_delay_min) AS avg_delivery_delay
     FROM orders o
     JOIN delivery_events de ON de.order_id = o.order_id
+    WHERE o.order_status = 'Delivered'
     GROUP BY o.customer_id
 ),
 customer_discounts AS (
     SELECT o.customer_id, COUNT(DISTINCT d.order_id) AS discounted_orders
     FROM orders o
     LEFT JOIN discounts d ON d.order_id = o.order_id
+    WHERE o.order_status = 'Delivered'
     GROUP BY o.customer_id
 ),
 rfm AS (
