@@ -176,11 +176,16 @@ scored AS (
 SELECT customer_id,
        r_score, f_score, m_score,
        (r_score + f_score + m_score) AS rfm_total,
+       -- Canonical segment rule (fixed thresholds, not NTILE quartiles) --
+       -- matches build_dashboard.py's assign_segment() exactly, per the
+       -- Phase 3 reconciliation. r_score/f_score/m_score above are still
+       -- exposed as informational quartile scores, but no longer drive
+       -- segment assignment.
        CASE
-           WHEN r_score = 4 AND f_score >= 3 THEN 'Champion'
-           WHEN r_score >= 3 AND f_score >= 2 THEN 'Loyal'
-           WHEN r_score = 2 THEN 'At Risk'
-           WHEN r_score = 1 AND f_score >= 2 THEN 'About to Lapse'
+           WHEN recency_days <= 30 AND frequency >= 5 THEN 'Champion'
+           WHEN recency_days <= 60 AND frequency >= 3 THEN 'Loyal'
+           WHEN recency_days <= 90 THEN 'At Risk'
+           WHEN recency_days <= 180 THEN 'About to Lapse'
            ELSE 'Lost'
        END AS segment,
        ROUND(monetary, 2) AS total_spend

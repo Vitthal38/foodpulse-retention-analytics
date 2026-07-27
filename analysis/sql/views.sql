@@ -146,11 +146,16 @@ SELECT customer_id, city, acquisition_channel, cohort_month, signup_date,
            WHEN discount_pct_of_orders <= 60 THEN 'Moderate'
            ELSE 'Heavy'
        END AS discount_group,
+       -- Canonical segment rule (fixed thresholds, not NTILE quartiles) --
+       -- matches build_dashboard.py's assign_segment() exactly, per the
+       -- Phase 3 reconciliation. r_score/f_score/m_score are still exposed
+       -- above as informational quartile scores but no longer drive
+       -- segment assignment.
        CASE
-           WHEN r_score = 4 AND f_score >= 3 THEN 'Champion'
-           WHEN r_score >= 3 AND f_score >= 2 THEN 'Loyal'
-           WHEN r_score = 2 THEN 'At Risk'
-           WHEN r_score = 1 AND f_score >= 2 THEN 'About to Lapse'
+           WHEN days_since_last_order <= 30 AND total_orders >= 5 THEN 'Champion'
+           WHEN days_since_last_order <= 60 AND total_orders >= 3 THEN 'Loyal'
+           WHEN days_since_last_order <= 90 THEN 'At Risk'
+           WHEN days_since_last_order <= 180 THEN 'About to Lapse'
            ELSE 'Lost'
        END AS rfm_segment,
        CASE WHEN days_since_last_order > 90 THEN 1 ELSE 0 END AS is_churned
