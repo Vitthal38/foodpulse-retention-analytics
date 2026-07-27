@@ -166,6 +166,7 @@ order_stats AS (
            100.0 * COUNT(DISTINCT d.order_id) / COUNT(*) AS discount_rate_pct
     FROM orders o
     LEFT JOIN discounts d ON d.order_id = o.order_id
+    WHERE o.order_status = 'Delivered'
     GROUP BY o.order_month
 ),
 delivery_stats AS (
@@ -174,6 +175,7 @@ delivery_stats AS (
            100.0 * SUM(CASE WHEN de.delivery_delay_min < 20 THEN 1 ELSE 0 END) / COUNT(*) AS on_time_delivery_pct
     FROM orders o
     JOIN delivery_events de ON de.order_id = o.order_id
+    WHERE o.order_status = 'Delivered'
     GROUP BY o.order_month
 )
 SELECT os.order_month,
