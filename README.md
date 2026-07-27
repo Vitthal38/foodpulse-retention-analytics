@@ -23,7 +23,7 @@ A focused retention case study for a fictional Indian food delivery platform —
 
 - **65.3% of customers never place a second order, and overall 90-day retention sits at just 32.65% (67.4% churn).** One-time buyers are the dominant lifecycle pattern on the platform, not the exception.
 - **Delivery delay is a real, statistically significant retention driver — but a gradual decline, not a cliff.** Retention falls steadily from 37.0% in the 0–10 minute bucket to roughly 18% in the 50+ minute bucket — meaningful, but far from the near-total collapse an earlier draft of this analysis assumed.
-- **Revenue is heavily concentrated.** The top **~9.7%** of customers by spend drive **50%** of GMV, and the top **~22.4%** drive **80%** — a small customer base carries most of the business.
+- **Revenue is heavily concentrated.** The top **~9.9%** of customers by spend drive **50%** of GMV, and the top **~22.9%** drive **80%** — a small customer base carries most of the business.
 - **Discount dependency correlates with lower value, not higher.** Heavy discount users show lower total spend and weaker retention than customers who use discounts lightly or not at all — discounting is not a reliable path to loyalty on its own.
 
 ## Tech Stack
@@ -79,7 +79,7 @@ Copy `.env.example` to `.env` and fill in your local PostgreSQL credentials befo
 
 **Discount dependency vs LTV.** Customers are classified by the share of their orders that carried a discount — Never, Light (1–30%), Moderate (31–60%), and Heavy (60%+) — and compared on total orders, net spend, and retention. Heavy discount users show lower spend and weaker retention than light or non-discount users, indicating that discount-driven acquisition is attracting price-sensitive, low-loyalty customers rather than building repeat demand.
 
-**Revenue concentration (Pareto).** Customers are ranked by total net spend and their cumulative share of GMV is tracked down the ranked list. The result is a textbook power-law curve: roughly 9.7% of customers account for half of all revenue, and 22.4% account for 80%. This reframes retention from a broad, undifferentiated problem into a narrower question of protecting a specific, identifiable group of high-value customers.
+**Revenue concentration (Pareto).** Customers are ranked by total net spend and their cumulative share of GMV is tracked down the ranked list. The result is a textbook power-law curve: roughly 9.9% of customers account for half of all revenue, and 22.9% account for 80%. This reframes retention from a broad, undifferentiated problem into a narrower question of protecting a specific, identifiable group of high-value customers.
 
 ## Charts
 
@@ -95,7 +95,7 @@ Copy `.env.example` to `.env` and fill in your local PostgreSQL credentials befo
 
 **1. Treat delivery delay as a churn-prevention lever, not just an ops metric.** Customers experiencing delivery delays that push them into the 50+ minute bucket retain at roughly 18%, versus 37.0% in the 0–10 minute bucket — a real, gradual decline, not a cliff — so the operational target is keeping median delivery delay inside that lowest band, and treating any customer drifting past it as an early-warning candidate for proactive service recovery (credits, priority dispatch) before they lapse.
 
-**2. Build a key-account motion around the top ~10% of customers.** Since roughly 9.7% of customers already generate half of all GMV, losing even a small fraction of this group is a disproportionately large revenue event — this segment should be tracked and protected with dedicated retention treatment (priority support, loyalty perks) rather than folded into generic, platform-wide campaigns.
+**2. Build a key-account motion around the top ~10% of customers.** Since roughly 9.9% of customers already generate half of all GMV, losing even a small fraction of this group is a disproportionately large revenue event — this segment should be tracked and protected with dedicated retention treatment (priority support, loyalty perks) rather than folded into generic, platform-wide campaigns.
 
 **3. Stop using deep discounts as the default retention tool, and redirect that spend toward the first-order experience.** With 65.3% of customers never returning and heavy discount users showing lower spend and retention than light/no-discount users, blanket discounting is not converting one-time buyers into repeat customers — instead, use the RFM segments to target "About to Lapse" and "At Risk" customers specifically, while reinvesting discount budget into delivery reliability and onboarding quality for first-time buyers.
 
