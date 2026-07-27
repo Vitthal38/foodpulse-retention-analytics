@@ -281,6 +281,7 @@ ORDER BY group_order;
 WITH customer_spend AS (
     SELECT customer_id, SUM(net_order_value) AS net_spend
     FROM orders
+    WHERE order_status = 'Delivered'
     GROUP BY customer_id
 ),
 ranked AS (
