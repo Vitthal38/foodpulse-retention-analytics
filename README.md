@@ -21,8 +21,8 @@ A focused retention case study for a fictional Indian food delivery platform —
 
 ## Key Findings
 
-- **66.2% of customers never place a second order.** One-time buyers are the dominant lifecycle pattern on the platform, not the exception.
-- **Delivery delay is a near-linear predictor of churn.** Customers whose typical order arrives within 0–10 minutes of the promised time retain best; customers in the 50+ minute delay bucket retain at just **0.6%** — effectively total churn.
+- **65.3% of customers never place a second order, and overall 90-day retention sits at just 32.65% (67.4% churn).** One-time buyers are the dominant lifecycle pattern on the platform, not the exception.
+- **Delivery delay is a real, statistically significant retention driver — but a gradual decline, not a cliff.** Retention falls steadily from 37.0% in the 0–10 minute bucket to roughly 18% in the 50+ minute bucket — meaningful, but far from the near-total collapse an earlier draft of this analysis assumed.
 - **Revenue is heavily concentrated.** The top **~9.7%** of customers by spend drive **50%** of GMV, and the top **~22.4%** drive **80%** — a small customer base carries most of the business.
 - **Discount dependency correlates with lower value, not higher.** Heavy discount users show lower total spend and weaker retention than customers who use discounts lightly or not at all — discounting is not a reliable path to loyalty on its own.
 
@@ -71,9 +71,9 @@ Copy `.env.example` to `.env` and fill in your local PostgreSQL credentials befo
 
 ## Analysis Overview
 
-**Cohort retention analysis.** Customers are grouped into monthly acquisition cohorts and tracked at 0, 1, 2, 3, 6, 9, and 12 months after their first order. This is the clearest lens on the platform's core problem: the steep drop after month 0 is driven by the 66.2% of customers who never return, making early-lifecycle retention — not later-stage loyalty — the primary lever available to the business.
+**Cohort retention analysis.** Customers are grouped into monthly acquisition cohorts and tracked at 0, 1, 2, 3, 6, 9, and 12 months after their first order. This is the clearest lens on the platform's core problem: the steep drop after month 0 is driven by the 65.3% of customers who never return, making early-lifecycle retention — not later-stage loyalty — the primary lever available to the business.
 
-**Delivery delay vs churn threshold.** Customers are bucketed by their median delivery delay across all orders (0–10, 10–20, 20–35, 35–50, and 50+ minutes), then measured on whether they returned for a second order within 90 days. Retention declines in a clear, monotonic step down as delay increases, bottoming out at 0.6% in the 50+ minute bucket. This turns delivery performance from an operations metric into a quantified retention risk.
+**Delivery delay vs churn threshold.** Customers are bucketed by their median delivery delay across all orders (0–10, 10–20, 20–35, 35–50, and 50+ minutes), then measured on whether they returned for a second order within 90 days. Retention declines in a clear, monotonic step down as delay increases — from 37.0% in the best bucket to roughly 18% in the worst — a gradual decline, not a cliff. This turns delivery performance from an operations metric into a quantified retention risk.
 
 **RFM segmentation.** Every customer is scored on Recency, Frequency, and Monetary value using quartile ranks (NTILE 4), then rolled up into five segments: Champion, Loyal, At Risk, About to Lapse, and Lost. This segmentation is the mechanism for turning the cohort and delay findings into an actionable, customer-level target list rather than an aggregate statistic.
 
@@ -93,11 +93,11 @@ Copy `.env.example` to `.env` and fill in your local PostgreSQL credentials befo
 
 ## Key Business Recommendations
 
-**1. Treat delivery delay as a churn-prevention lever, not just an ops metric.** Customers experiencing delivery delays that push them into the 50+ minute bucket churn almost entirely (0.6% retention), while the 0–10 minute bucket retains best — the operational target is keeping median delivery delay inside that lowest band, and treating any customer drifting past it as an early-warning candidate for proactive service recovery (credits, priority dispatch) before they lapse.
+**1. Treat delivery delay as a churn-prevention lever, not just an ops metric.** Customers experiencing delivery delays that push them into the 50+ minute bucket retain at roughly 18%, versus 37.0% in the 0–10 minute bucket — a real, gradual decline, not a cliff — so the operational target is keeping median delivery delay inside that lowest band, and treating any customer drifting past it as an early-warning candidate for proactive service recovery (credits, priority dispatch) before they lapse.
 
 **2. Build a key-account motion around the top ~10% of customers.** Since roughly 9.7% of customers already generate half of all GMV, losing even a small fraction of this group is a disproportionately large revenue event — this segment should be tracked and protected with dedicated retention treatment (priority support, loyalty perks) rather than folded into generic, platform-wide campaigns.
 
-**3. Stop using deep discounts as the default retention tool, and redirect that spend toward the first-order experience.** With 66.2% of customers never returning and heavy discount users showing lower spend and retention than light/no-discount users, blanket discounting is not converting one-time buyers into repeat customers — instead, use the RFM segments to target "About to Lapse" and "At Risk" customers specifically, while reinvesting discount budget into delivery reliability and onboarding quality for first-time buyers.
+**3. Stop using deep discounts as the default retention tool, and redirect that spend toward the first-order experience.** With 65.3% of customers never returning and heavy discount users showing lower spend and retention than light/no-discount users, blanket discounting is not converting one-time buyers into repeat customers — instead, use the RFM segments to target "About to Lapse" and "At Risk" customers specifically, while reinvesting discount budget into delivery reliability and onboarding quality for first-time buyers.
 
 ## Repository Notes
 
