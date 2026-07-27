@@ -79,6 +79,9 @@ WITH delivered_orders AS (
     JOIN delivery_events de ON de.order_id = o.order_id
     WHERE o.order_status = 'Delivered'
 ),
+snapshot AS (
+    SELECT MAX(order_date) AS snapshot_date FROM delivered_orders
+),
 order_seq AS (
     SELECT customer_id, order_date, delivery_delay_min,
            ROW_NUMBER() OVER (PARTITION BY customer_id ORDER BY order_date) AS rn
@@ -94,6 +97,11 @@ second_order AS (
     FROM order_seq
     WHERE rn = 2
 ),
+-- right-censoring fix: only keep customers whose 90-day outcome is actually
+-- knowable -- they've already placed a 2nd order, or 90+ days have elapsed
+-- since their 1st order so a non-reorder can be safely called "churned".
+-- Customers acquired too recently to have had a full 90-day window yet are
+-- excluded rather than counted as churned.
 customer_retention AS (
     SELECT fo.customer_id, fo.first_order_delay,
            CASE
@@ -103,6 +111,9 @@ customer_retention AS (
            END AS retained_90d
     FROM first_order fo
     LEFT JOIN second_order so ON so.customer_id = fo.customer_id
+    CROSS JOIN snapshot sn
+    WHERE so.second_order_date IS NOT NULL
+       OR (sn.snapshot_date - fo.first_order_date) >= 90
 ),
 delay_bucket AS (
     SELECT customer_id, retained_90d,
@@ -198,6 +209,9 @@ customer_delay AS (
     JOIN delivery_events de ON de.order_id = o.order_id
     GROUP BY o.customer_id
 ),
+snapshot AS (
+    SELECT MAX(order_date) AS snapshot_date FROM orders
+),
 order_seq AS (
     SELECT customer_id, order_date,
            ROW_NUMBER() OVER (PARTITION BY customer_id ORDER BY order_date) AS rn
@@ -208,6 +222,8 @@ first_two AS (
     FROM (SELECT * FROM order_seq WHERE rn = 1) o1
     LEFT JOIN (SELECT * FROM order_seq WHERE rn = 2) o2 ON o2.customer_id = o1.customer_id
 ),
+-- right-censoring fix: exclude customers whose 90-day reorder outcome isn't
+-- knowable yet (no 2nd order, and fewer than 90 days elapsed since 1st order).
 customer_profile AS (
     SELECT co.customer_id,
            co.total_orders,
@@ -223,6 +239,9 @@ customer_profile AS (
     JOIN customer_discounts cd ON cd.customer_id = co.customer_id
     JOIN customer_delay cdel ON cdel.customer_id = co.customer_id
     JOIN first_two ft ON ft.customer_id = co.customer_id
+    CROSS JOIN snapshot sn
+    WHERE ft.second_order_date IS NOT NULL
+       OR (sn.snapshot_date - ft.first_order_date) >= 90
 ),
 grouped AS (
     SELECT *,
