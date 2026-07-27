@@ -168,12 +168,28 @@ def compute_all_metrics():
     first_order = order_seq.apply(lambda d: d[0])
     second_order = order_seq.apply(lambda d: d[1] if len(d) > 1 else pd.NaT)
     last_order = order_seq.apply(lambda d: d[-1])
-    gap_days = (second_order - first_order).dt.days
-    retained_90d_raw = (gap_days <= 90) & gap_days.notna()
-    # right-censoring fix: a customer with no 2nd order yet can only be called
-    # "churned" once their 90-day window has actually elapsed. Customers whose
-    # first order is <90 days before the snapshot and haven't reordered yet
-    # are excluded (outcome unknown), not counted as churned.
+
+    # retained_90d_raw: matches the Power BI DAX measure exactly -- a customer
+    # is retained if ANY delivered order falls strictly after their first order
+    # and within 90 days of it (order_date > FirstOrder AND order_date <=
+    # FirstOrder + 90), not simply "gap to the chronological 2nd order <= 90".
+    # The distinction matters for customers who placed a 2nd delivered order on
+    # the exact same calendar day as their 1st: DAX's strict ">" excludes that
+    # same-day order from counting as a qualifying repeat (confirmed against
+    # customer_facts_v2.csv's independently-computed Retained90d column, which
+    # uses the same strict boundary and matches this exactly: 15,907 True).
+    # A naive gap_days<=90 check on just the literal 2nd order overcounts these
+    # customers as retained by 48, and previously caused a ~0.08pp mismatch
+    # against the live Power BI figure.
+    first_order_map = delivered_sorted.groupby("customer_id")["order_date"].transform("min")
+    qualifies = (delivered_sorted["order_date"] > first_order_map) & \
+                (delivered_sorted["order_date"] <= first_order_map + pd.Timedelta(days=90))
+    retained_90d_raw = qualifies.groupby(delivered_sorted["customer_id"]).any()
+
+    # right-censoring fix: a customer with no qualifying repeat yet can only be
+    # called "churned" once their 90-day window has actually elapsed. Customers
+    # whose first order is <90 days before the snapshot and haven't reordered
+    # yet are excluded (outcome unknown), not counted as churned.
     days_since_first = (snapshot_date - first_order).dt.days
     eligible_90d = second_order.notna() | (days_since_first >= 90)
     retained_90d = retained_90d_raw[eligible_90d]
