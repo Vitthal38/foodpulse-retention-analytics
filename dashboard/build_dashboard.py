@@ -234,8 +234,13 @@ def compute_all_metrics():
     m["discount_rate"] = delivered["is_discounted"].mean() * 100
 
     # month-1 cohort retention + full matrix (anchored to first_order_date)
+    # cohort_sizes restricted to customers with >=1 delivered order (matches
+    # v_cohort_retention's INNER JOIN to first_order): a customer who never
+    # placed a delivered order has no "first order month" to anchor a cohort
+    # to, and including them here was diluting every retention_pct cell by
+    # the same 1,278 customers already tracked separately as "Never Ordered".
     cust_cohort = customers.set_index("customer_id")["cohort_month"]
-    cohort_sizes = cust_cohort.value_counts()
+    cohort_sizes = cust_cohort.reindex(first_order.index).value_counts()
     tmp = delivered_sorted.copy()
     tmp["first_order_date"] = tmp["customer_id"].map(first_order)
     tmp["months_since_first"] = ((tmp["order_date"].dt.year - tmp["first_order_date"].dt.year) * 12
