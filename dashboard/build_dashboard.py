@@ -154,6 +154,47 @@ def save_fig(fig, filename):
 # ============================================================================
 # Data computation (independently verified — see Step 1 report)
 # ============================================================================
+def compute_retained_90d(delivered_sorted: pd.DataFrame, snapshot_date: pd.Timestamp):
+    """Right-censored 90-day retention flag per customer_id.
+
+    delivered_sorted: DataFrame with columns customer_id, order_date (datetime64),
+    sorted by [customer_id, order_date] (ties broken by original row order).
+    snapshot_date: the "as-of" date the 90-day window is measured against.
+
+    Returns (retained_90d_raw, eligible_90d, retained_90d), each indexed by
+    customer_id:
+      - retained_90d_raw: True if ANY delivered order falls strictly after the
+        customer's first order and within 90 days of it (order_date > FirstOrder
+        AND order_date <= FirstOrder + 90) -- matches the Power BI DAX measure
+        exactly. A same-day 2nd order does NOT qualify (strict ">"). This is
+        deliberately NOT "gap to the chronological 2nd order <= 90": a naive
+        gap_days<=90 check on just the literal 2nd order overcounts retained
+        customers (previously caused a ~0.08pp mismatch against the live Power
+        BI figure, confirmed against customer_facts_v2.csv's independently
+        computed Retained90d column: 15,907 True).
+      - eligible_90d: True if this customer's 90-day outcome is actually
+        knowable yet -- they already have a qualifying-or-not 2nd order, or
+        90+ days have elapsed since their first order. Customers acquired too
+        recently to have had a full 90-day window are excluded (right-censored)
+        rather than counted as churned.
+      - retained_90d: retained_90d_raw filtered down to eligible_90d customers.
+    """
+    order_seq = delivered_sorted.groupby("customer_id")["order_date"].apply(list)
+    first_order = order_seq.apply(lambda d: d[0])
+    second_order = order_seq.apply(lambda d: d[1] if len(d) > 1 else pd.NaT)
+
+    first_order_map = delivered_sorted.groupby("customer_id")["order_date"].transform("min")
+    qualifies = (delivered_sorted["order_date"] > first_order_map) & \
+                (delivered_sorted["order_date"] <= first_order_map + pd.Timedelta(days=90))
+    retained_90d_raw = qualifies.groupby(delivered_sorted["customer_id"]).any()
+
+    days_since_first = (snapshot_date - first_order).dt.days
+    eligible_90d = second_order.notna() | (days_since_first >= 90)
+    retained_90d = retained_90d_raw[eligible_90d]
+
+    return retained_90d_raw, eligible_90d, retained_90d
+
+
 def compute_all_metrics():
     orders = pd.read_csv(f"{DATA_DIR}/orders.csv", parse_dates=["order_date"])
     customers = pd.read_csv(f"{DATA_DIR}/customers.csv", parse_dates=["signup_date"])
@@ -166,33 +207,9 @@ def compute_all_metrics():
     snapshot_date = delivered["order_date"].max()
 
     first_order = order_seq.apply(lambda d: d[0])
-    second_order = order_seq.apply(lambda d: d[1] if len(d) > 1 else pd.NaT)
     last_order = order_seq.apply(lambda d: d[-1])
 
-    # retained_90d_raw: matches the Power BI DAX measure exactly -- a customer
-    # is retained if ANY delivered order falls strictly after their first order
-    # and within 90 days of it (order_date > FirstOrder AND order_date <=
-    # FirstOrder + 90), not simply "gap to the chronological 2nd order <= 90".
-    # The distinction matters for customers who placed a 2nd delivered order on
-    # the exact same calendar day as their 1st: DAX's strict ">" excludes that
-    # same-day order from counting as a qualifying repeat (confirmed against
-    # customer_facts_v2.csv's independently-computed Retained90d column, which
-    # uses the same strict boundary and matches this exactly: 15,907 True).
-    # A naive gap_days<=90 check on just the literal 2nd order overcounts these
-    # customers as retained by 48, and previously caused a ~0.08pp mismatch
-    # against the live Power BI figure.
-    first_order_map = delivered_sorted.groupby("customer_id")["order_date"].transform("min")
-    qualifies = (delivered_sorted["order_date"] > first_order_map) & \
-                (delivered_sorted["order_date"] <= first_order_map + pd.Timedelta(days=90))
-    retained_90d_raw = qualifies.groupby(delivered_sorted["customer_id"]).any()
-
-    # right-censoring fix: a customer with no qualifying repeat yet can only be
-    # called "churned" once their 90-day window has actually elapsed. Customers
-    # whose first order is <90 days before the snapshot and haven't reordered
-    # yet are excluded (outcome unknown), not counted as churned.
-    days_since_first = (snapshot_date - first_order).dt.days
-    eligible_90d = second_order.notna() | (days_since_first >= 90)
-    retained_90d = retained_90d_raw[eligible_90d]
+    retained_90d_raw, eligible_90d, retained_90d = compute_retained_90d(delivered_sorted, snapshot_date)
     frequency = order_seq.apply(len)
 
     orders_per_cust = delivered.groupby("customer_id").size()
