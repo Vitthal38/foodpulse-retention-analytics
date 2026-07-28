@@ -53,8 +53,12 @@ foodpulseretention-analytics/
 │   └── charts/                # chart PNGs — tracked in git
 ├── data/
 │   └── raw/                  # synthetic CSVs — gitignored, regenerated on run
+├── docs/
+│   └── data_dictionary.md    # every table/column, business meaning, synthetic-data caveats
+├── tests/                    # pytest regression tests (see .github/workflows/ci.yml)
 ├── .env.example               # PostgreSQL connection template
 ├── requirements.txt
+├── requirements-dev.txt
 ├── LICENSE
 ├── .gitignore
 └── README.md
@@ -73,6 +77,8 @@ Step 7: Open the Power BI dashboard and refresh its data source
 ```
 
 Copy `.env.example` to `.env` and fill in your local PostgreSQL credentials before running Step 3.
+
+See [docs/data_dictionary.md](docs/data_dictionary.md) for every table/column and its business meaning.
 
 ## Analysis Overview
 
@@ -100,9 +106,16 @@ Copy `.env.example` to `.env` and fill in your local PostgreSQL credentials befo
 
 **1. Treat delivery delay as a churn-prevention lever, not just an ops metric.** Customers experiencing delivery delays that push them into the 50+ minute bucket retain at roughly 20.5%, versus 39.9% in the 0–10 minute bucket — a real, gradual decline, not a cliff — so the operational target is keeping median delivery delay inside that lowest band, and treating any customer drifting past it as an early-warning candidate for proactive service recovery (credits, priority dispatch) before they lapse.
 
-**2. Build a key-account motion around the top ~10% of customers.** Since roughly 9.9% of customers already generate half of all GMV, losing even a small fraction of this group is a disproportionately large revenue event — this segment should be tracked and protected with dedicated retention treatment (priority support, loyalty perks) rather than folded into generic, platform-wide campaigns.
+**2. Build a key-account motion around the top ~9.9% of customers.** This cohort — 4,832 of 48,722 ordering customers — drives ₹120.7M of the platform's ₹241.5M annual GMV (50%), at an average spend of ₹24,986 per customer versus ₹4,956 across the ordering base as a whole (~5x). Losing even 5% of this cohort (~242 customers) to churn would put roughly **₹6.0M of annual GMV at risk** — equivalent to the combined GMV of the bottom 20,937 customers (43% of the ordering base). This segment should be tracked and protected with dedicated retention treatment (priority support, loyalty perks) rather than folded into generic, platform-wide campaigns.
 
-**3. Stop using deep discounts as the default retention tool, and redirect that spend toward the first-order experience.** With 65.3% of customers never returning and heavy discount users showing lower spend and retention than light/no-discount users, blanket discounting is not converting one-time buyers into repeat customers — instead, use the RFM segments to target "About to Lapse" and "At Risk" customers specifically, while reinvesting discount budget into delivery reliability and onboarding quality for first-time buyers.
+**3. Stop using deep discounts as the default retention tool, and redirect that spend toward the first-order experience.** Heavy discount users (3,268 customers whose orders are 60%+ discounted) show an average LTV of ₹10,101 versus ₹13,952 for light/moderate discount users — a ₹3,851 per-customer gap that totals **~₹12.6M in foregone lifetime value** across the heavy-discount cohort alone. Combined with 65.3% of customers never returning at all, blanket discounting is not converting one-time buyers into repeat customers — instead, use the RFM segments to target "About to Lapse" and "At Risk" customers specifically, while reinvesting discount budget into delivery reliability and onboarding quality for first-time buyers.
+
+## Limitations & Assumptions
+
+- **This is entirely synthetic data.** `generate_data.py` uses [Faker](https://faker.readthedocs.io/) to generate customer cities and identifiers (seed=42) — these are not real Indian cities, customers, restaurants, or orders. Any resemblance of a city name or business pattern to a real place or company is coincidental.
+- **The underlying behavioral mechanics are hand-tuned, not fit to real data.** Retention propensity (`retention_score`), spend concentration (`spend_multiplier`), delivery-delay exposure (`delay_affinity`), and discount-seeking behavior (`discount_affinity`) are latent traits assigned via chosen distributions and coefficients (see `generate_customers()` in `generate_data.py`), not estimated from an actual food-delivery dataset. The resulting patterns (65.3% one-time-buyer rate, revenue concentration, delay-vs-retention gradient) are the generator's designed behavior, not an empirical discovery — the analysis pipeline and dashboard reconciliation work are real and independently verified, but the input data's realism is a modeling choice, not a fact about any real business.
+- **Power BI vs. Python retention figures agree to within 0.03 percentage points, not exactly.** The live Power BI dashboard reports 35.44% 90-day retention; the Python reference implementation (`dashboard/build_dashboard.py`) computes 35.41%. Both use the same right-censoring and boundary-condition rules; the residual gap was root-caused as far as practical value allowed and accepted as within tolerance rather than chased further (see Repository Notes below).
+- **Known non-determinism (not yet fixed):** a small (~1–3 customer) run-to-run variance exists in `queries.sql` Query 2's delay-bucket assignment, from the same class of missing-tie-breaker issue fixed elsewhere (`ROW_NUMBER() OVER (PARTITION BY customer_id ORDER BY order_date)` has no tie-breaker for same-day orders). Left as a known, low-impact issue rather than fixed, to keep this hardening pass scoped to its stated phases.
 
 ## Repository Notes
 
