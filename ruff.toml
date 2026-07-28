@@ -1,0 +1,8 @@
+line-length = 140
+
+[lint]
+# Standard pyflakes/pycodestyle baseline (real correctness issues: unused
+# imports, undefined names, syntax errors) -- not style/complexity opinions
+# (import sorting, dict-vs-literal, etc.), which would force reformatting
+# already-working, previously-reviewed code for no functional benefit.
+select = ["E", "F", "W"]

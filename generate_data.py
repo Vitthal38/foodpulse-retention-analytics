@@ -334,8 +334,6 @@ def generate_orders(customers_df, restaurants_df, latent):
 # 6. Order items (also finalizes items_count / gross_order_value on orders)
 # --------------------------------------------------------------------------
 def generate_order_items(orders_df, helper):
-    n_orders = len(orders_df)
-
     # basket size driven by spend_multiplier (loyal/high-spend customers order more items)
     lam = np.clip(1.4 + 0.9 * (helper["spend_multiplier"].to_numpy() - 1.0), 0.8, 4.5)
     items_count = rng.poisson(lam) + 1

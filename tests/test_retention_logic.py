@@ -41,10 +41,10 @@ def test_retained_90d_boundary_condition(build_dashboard_module):
 
     retained_90d_raw, eligible_90d, retained_90d = compute_retained_90d(df, snapshot)
 
-    assert retained_90d_raw["A"] == False, "same-day repeat order must not count as retained"
-    assert retained_90d_raw["B"] == True
-    assert retained_90d_raw["C"] == True, "exactly 90 days later must count (inclusive upper bound)"
-    assert retained_90d_raw["D"] == False, "91 days later must not count (outside the 90-day window)"
+    assert not retained_90d_raw["A"], "same-day repeat order must not count as retained"
+    assert retained_90d_raw["B"]
+    assert retained_90d_raw["C"], "exactly 90 days later must count (inclusive upper bound)"
+    assert not retained_90d_raw["D"], "91 days later must not count (outside the 90-day window)"
 
 
 def test_right_censoring_excludes_only_unresolved_negatives(build_dashboard_module):
@@ -63,9 +63,9 @@ def test_right_censoring_excludes_only_unresolved_negatives(build_dashboard_modu
 
     retained_90d_raw, eligible_90d, retained_90d = compute_retained_90d(df, snapshot)
 
-    assert eligible_90d["POS"] == True, "a known positive outcome must never be censored, regardless of elapsed time"
+    assert eligible_90d["POS"], "a known positive outcome must never be censored, regardless of elapsed time"
     assert "POS" in retained_90d.index
-    assert retained_90d["POS"] == True
+    assert retained_90d["POS"]
 
-    assert eligible_90d["NEG_RECENT"] == False, "an unresolved non-repeat customer within the window must be censored"
+    assert not eligible_90d["NEG_RECENT"], "an unresolved non-repeat customer within the window must be censored"
     assert "NEG_RECENT" not in retained_90d.index
