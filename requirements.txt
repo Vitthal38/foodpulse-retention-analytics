@@ -1,0 +1,8 @@
+pandas==3.0.3
+numpy==2.5.0
+Faker==40.28.1
+psycopg2-binary==2.9.11
+python-dotenv==1.2.2
+matplotlib==3.11.0
+seaborn==0.13.2
+scipy==1.18.0

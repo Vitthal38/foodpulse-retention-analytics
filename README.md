@@ -60,14 +60,16 @@ foodpulseretention-analytics/
 ## How to Reproduce
 
 ```
-Step 1: python generate_data.py
-Step 2: python pipeline/load_postgres.py
-Step 3: python analysis/run_queries.py
-Step 4: python analysis/visualisations.py
-Step 5: Open the Power BI file (coming soon)
+Step 1: pip install -r requirements.txt
+Step 2: python generate_data.py
+Step 3: python pipeline/load_postgres.py
+Step 4: python analysis/run_queries.py
+Step 5: python analysis/visualisations.py
+Step 6: python analysis/export_customer_facts.py   # regenerates customer_facts_v2.csv
+Step 7: Open the Power BI dashboard and refresh its data source
 ```
 
-Copy `.env.example` to `.env` and fill in your local PostgreSQL credentials before running Step 2.
+Copy `.env.example` to `.env` and fill in your local PostgreSQL credentials before running Step 3.
 
 ## Analysis Overview
 
