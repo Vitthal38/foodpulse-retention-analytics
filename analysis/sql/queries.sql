@@ -40,6 +40,17 @@ order_activity AS (
 target_months AS (
     SELECT unnest(ARRAY[0, 1, 2, 3, 6, 9, 12]) AS months_since_first
 ),
+-- data-horizon mask: matches analysis/visualisations.py's chart_cohort_retention_heatmap()
+-- month-level rule exactly (data_horizon = max cohort_month present in `cohort`; a cell is
+-- masked when cohort_month + months_since_first, in whole calendar months, exceeds that
+-- horizon) -- same rule and same rationale as v_cohort_retention in views.sql.
+data_horizon AS (
+    SELECT MAX(
+               CAST(SPLIT_PART(cohort_month, '-', 1) AS INT) * 12
+             + CAST(SPLIT_PART(cohort_month, '-', 2) AS INT)
+           ) AS horizon_month_index
+    FROM cohort
+),
 retention AS (
     SELECT coh.cohort_month, tm.months_since_first,
            COUNT(DISTINCT oa.customer_id) AS customer_count
@@ -52,10 +63,23 @@ retention AS (
 )
 SELECT r.cohort_month,
        r.months_since_first,
-       r.customer_count,
-       ROUND(100.0 * r.customer_count / cs.cohort_size, 2) AS retention_pct
+       CASE
+           WHEN (CAST(SPLIT_PART(r.cohort_month, '-', 1) AS INT) * 12
+                 + CAST(SPLIT_PART(r.cohort_month, '-', 2) AS INT)
+                 + r.months_since_first) > dh.horizon_month_index
+           THEN NULL
+           ELSE r.customer_count
+       END AS customer_count,
+       CASE
+           WHEN (CAST(SPLIT_PART(r.cohort_month, '-', 1) AS INT) * 12
+                 + CAST(SPLIT_PART(r.cohort_month, '-', 2) AS INT)
+                 + r.months_since_first) > dh.horizon_month_index
+           THEN NULL
+           ELSE ROUND(100.0 * r.customer_count / cs.cohort_size, 2)
+       END AS retention_pct
 FROM retention r
 JOIN cohort_sizes cs ON cs.cohort_month = r.cohort_month
+CROSS JOIN data_horizon dh
 ORDER BY r.cohort_month, r.months_since_first;
 
 
