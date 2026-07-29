@@ -6,6 +6,12 @@
       "runtimeExecutable": "C:\\Data Analyst Projects\\rag-chatbot\\venv\\Scripts\\streamlit.exe",
       "runtimeArgs": ["run", "C:\\Data Analyst Projects\\rag-chatbot\\ui\\app.py"],
       "port": 8501
+    },
+    {
+      "name": "foodpulse-pages",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "http.server", "8811"],
+      "port": 8811
     }
   ]
 }

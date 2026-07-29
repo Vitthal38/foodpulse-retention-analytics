@@ -12,6 +12,8 @@
       --muted: #6b7280;
       --line: #e5e7eb;
       --bg: #ffffff;
+      --good: #0f7a3d;
+      --warning: #92400e;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
@@ -49,6 +51,54 @@
     figcaption .desc { display: block; font-size: 0.88rem; color: var(--muted); }
     footer { text-align: center; padding: 28px 20px; color: var(--muted); font-size: 0.85rem; border-top: 1px solid var(--line); }
     footer a { color: var(--blue); text-decoration: none; }
+
+    /* ---- Live interactive Page 1 recomputation ---- */
+    .live-section {
+      border: 1px solid var(--line); border-radius: 10px; margin: 0 0 32px; overflow: hidden;
+    }
+    .live-header {
+      background: var(--navy); color: #fff; padding: 14px 20px; font-weight: 700; font-size: 1rem;
+      display: flex; align-items: center; gap: 10px;
+    }
+    .live-header .dot {
+      width: 8px; height: 8px; border-radius: 50%; background: #4ade80; display: inline-block;
+    }
+    .live-body { padding: 18px 20px 22px; background: #fff; }
+    .verify-note {
+      background: #fff7e6; border: 1px solid #f0c674; color: var(--warning);
+      padding: 12px 16px; border-radius: 8px; font-size: 0.86rem; margin-bottom: 16px;
+    }
+    .filterbar {
+      display: flex; flex-wrap: wrap; align-items: end; gap: 14px; margin-bottom: 18px;
+      padding-bottom: 16px; border-bottom: 1px solid var(--line);
+    }
+    .filterbar .field { display: flex; flex-direction: column; gap: 4px; }
+    .filterbar label { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
+    .filterbar select {
+      padding: 7px 10px; border: 1px solid #cbd5e1; border-radius: 6px; background: #fff;
+      color: var(--ink); font-size: 0.88rem; min-width: 160px;
+    }
+    .filterbar button {
+      padding: 8px 14px; border: 1px solid #cbd5e1; border-radius: 6px; background: transparent;
+      color: var(--muted); font-size: 0.85rem; cursor: pointer; font-weight: 600;
+    }
+    .filterbar button:hover { background: #f1f5f9; }
+    .filterbar .count { margin-left: auto; font-size: 0.85rem; color: var(--muted); align-self: center; }
+    .filterbar .count b { color: var(--ink); }
+    .kpi-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; }
+    .kpi {
+      background: #f8fafc; border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px;
+    }
+    .kpi .lbl { font-size: 0.74rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; font-weight: 700; }
+    .kpi .val { font-size: 1.6rem; font-weight: 800; color: var(--navy); margin-top: 4px; }
+    .kpi .sub { font-size: 0.78rem; color: var(--muted); margin-top: 2px; }
+    .loading { text-align: center; padding: 40px 20px; color: var(--muted); }
+    .loading .spin {
+      width: 26px; height: 26px; border: 3px solid var(--line); border-top-color: var(--blue);
+      border-radius: 50%; margin: 0 auto 12px; animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .error-box { background: #fdecea; border: 1px solid #d03b3b; color: #7a1f1f; padding: 14px 18px; border-radius: 8px; margin: 8px 0; }
   </style>
 </head>
 <body>
@@ -56,10 +106,11 @@
     <h1>FoodPulse — Retention & Churn Analytics</h1>
     <p>Food Delivery Platform&nbsp;|&nbsp;50,000 Customers&nbsp;|&nbsp;24 Months</p>
     <div class="notice">
-      These are <b>static screenshots</b> of the Power BI Desktop report. The full <code>.pbix</code> file
-      is included directly in this repository — see
+      Page 1 below is a <b>live, interactive recomputation</b> in your browser (see the "Live" panel).
+      Pages 2 &amp; 3 remain <b>static screenshots</b> of the Power BI Desktop report for now. The full
+      <code>.pbix</code> file is included directly in this repository — see
       <a href="dashboard/FoodPulse.pbix" style="color:#185fa5;">dashboard/FoodPulse.pbix</a> — so the model
-      and DAX measures behind these numbers can be opened and inspected directly, not just viewed as images.
+      and DAX measures behind these numbers can be opened and inspected directly.
     </div>
   </header>
 
@@ -81,10 +132,69 @@
     <figure>
       <img src="dashboard/screenshots/page1_executive_summary.png" alt="Executive Summary dashboard page" />
       <figcaption>
-        <span class="title">Page 1 — Executive Summary</span>
-        <span class="desc">65.3% of customers never place a 2nd order; overall 90-day retention (right-censored) sits at 35.44%.</span>
+        <span class="title">Page 1 — Executive Summary (static reference)</span>
+        <span class="desc">65.3% of customers never place a 2nd order; overall 90-day retention (right-censored) sits at 35.44%. See the live, filterable version below.</span>
       </figcaption>
     </figure>
+
+    <div class="live-section">
+      <div class="live-header"><span class="dot"></span> Page 1 — Live Recomputation (interactive)</div>
+      <div class="live-body">
+        <div class="verify-note">
+          <b>Verify against source:</b> these numbers are computed independently, client-side, in JavaScript
+          from <code>data/processed/customer_facts_dashboard.csv</code> — the same underlying per-customer
+          data (and the same right-censoring / GMV filtering logic) already validated against the Power BI
+          <code>.pbix</code> and <code>dashboard/build_dashboard.py</code> elsewhere in this repository. They
+          are expected to match the live Power BI dashboard to within the same ~0.03 percentage point
+          tolerance already documented in the README, not necessarily bit-for-bit — spot-checked against the
+          actual <code>.pbix</code> across multiple city/channel combinations.
+          <br /><br />
+          <b>By design:</b> GMV and Ordering Customers reflect platform totals and are not filtered by
+          city/channel in the current dashboard version — only Retention % is segment-specific, matching the
+          real <code>.pbix</code>'s slicer behavior exactly.
+        </div>
+
+        <div id="live-loading" class="loading">
+          <div class="spin"></div>
+          Loading customer_facts_dashboard.csv (50,000 rows)…
+        </div>
+        <div id="live-error" style="display:none"></div>
+
+        <div id="live-app" style="display:none">
+          <div class="filterbar">
+            <div class="field">
+              <label for="f-city">City</label>
+              <select id="f-city"><option value="all">All</option></select>
+            </div>
+            <div class="field">
+              <label for="f-channel">Acquisition Channel</label>
+              <select id="f-channel"><option value="all">All</option></select>
+            </div>
+            <button id="reset-filters">Reset filters</button>
+            <div class="count"><b id="filtered-count">50,000</b>&nbsp;of 50,000 customers match</div>
+          </div>
+
+          <div class="kpi-row">
+            <div class="kpi">
+              <div class="lbl">90-Day Retention %</div>
+              <div class="val" id="kpi-retention">—</div>
+              <div class="sub" id="kpi-retention-sub">—</div>
+            </div>
+            <div class="kpi">
+              <div class="lbl">Total GMV (Delivered)</div>
+              <div class="val" id="kpi-gmv">—</div>
+              <div class="sub">Platform total — not filtered</div>
+            </div>
+            <div class="kpi">
+              <div class="lbl">Ordering Customers</div>
+              <div class="val" id="kpi-ordering">—</div>
+              <div class="sub">Platform total — not filtered</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <figure>
       <img src="dashboard/screenshots/page2_retention_churn.png" alt="Retention and Churn Analysis dashboard page" />
       <figcaption>
@@ -105,5 +215,165 @@
     Built with Python · PostgreSQL · Power BI Desktop ·
     <a href="https://github.com/Vitthal38/foodpulse-retention-analytics" target="_blank" rel="noopener">View source on GitHub</a>
   </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+  <script>
+  (function () {
+    "use strict";
+
+    var CSV_PATH = "data/processed/customer_facts_dashboard.csv";
+    // Real max(order_date) in the dataset, verified this session via SQL
+    // (MAX(order_date) FROM orders) -- the "as-of" date every eligibility
+    // check below is measured against, matching the Power BI/Python snapshot.
+    var SNAPSHOT_DATE = new Date("2025-07-07T00:00:00Z");
+
+    var rawData = [];
+    var FILTER_IDS = { city: "f-city", channel: "f-channel" };
+
+    Papa.parse(CSV_PATH, {
+      download: true,
+      header: true,
+      dynamicTyping: true,
+      skipEmptyLines: true,
+      complete: function (results) {
+        rawData = results.data.filter(function (r) { return r.customer_id; });
+        if (!rawData.length) { showError("Parsed 0 rows from " + CSV_PATH + "."); return; }
+        buildFilterOptions();
+        resetFilterControls();
+        wireControls();
+
+        // GMV and Ordering Customers are set ONCE here, from the unfiltered dataset,
+        // and never touched again -- matches the real .pbix's confirmed behavior,
+        // where these two cards are platform-wide totals and do not respond to the
+        // City/Acquisition Channel slicers (only 90-Day Retention % is segment-
+        // specific). Do not move this into renderAll()/computeKpis()'s DOM writes.
+        var baseline = computeKpis(rawData);
+        document.getElementById("kpi-gmv").textContent = fmtInr(baseline.totalGmv);
+        document.getElementById("kpi-ordering").textContent = baseline.orderingCustomers.toLocaleString();
+
+        document.getElementById("live-loading").style.display = "none";
+        document.getElementById("live-app").style.display = "block";
+        renderAll();
+      },
+      error: function (err) {
+        showError("Could not load " + CSV_PATH + ": " + err.message +
+          ". This page must be served over http(s) (e.g. GitHub Pages) — opening index.html " +
+          "directly as a file:// URL blocks the CSV fetch in most browsers.");
+      }
+    });
+
+    function showError(msg) {
+      document.getElementById("live-loading").style.display = "none";
+      var box = document.getElementById("live-error");
+      box.style.display = "block";
+      box.innerHTML = '<div class="error-box"><b>Live recomputation failed to load.</b><br>' + msg + "</div>";
+    }
+
+    function uniqueSorted(field) {
+      var s = {};
+      rawData.forEach(function (r) { if (r[field]) s[r[field]] = true; });
+      return Object.keys(s).sort();
+    }
+
+    function buildFilterOptions() {
+      fillSelect("f-city", uniqueSorted("city"));
+      fillSelect("f-channel", uniqueSorted("acquisition_channel"));
+    }
+    function fillSelect(id, values) {
+      var el = document.getElementById(id);
+      values.forEach(function (v) {
+        var opt = document.createElement("option");
+        opt.value = v; opt.textContent = v;
+        el.appendChild(opt);
+      });
+    }
+
+    function resetFilterControls() {
+      Object.keys(FILTER_IDS).forEach(function (key) { document.getElementById(FILTER_IDS[key]).value = "all"; });
+    }
+
+    function wireControls() {
+      Object.keys(FILTER_IDS).forEach(function (key) {
+        document.getElementById(FILTER_IDS[key]).addEventListener("change", renderAll);
+      });
+      document.getElementById("reset-filters").addEventListener("click", function () {
+        resetFilterControls();
+        renderAll();
+      });
+    }
+
+    function getFiltered() {
+      var city = document.getElementById("f-city").value;
+      var channel = document.getElementById("f-channel").value;
+      return rawData.filter(function (r) {
+        return (city === "all" || r.city === city) && (channel === "all" || r.acquisition_channel === channel);
+      });
+    }
+
+    function daysBetween(a, b) { return Math.round((b - a) / 86400000); }
+
+    // Replicates dashboard/build_dashboard.py's compute_retained_90d() and the
+    // Power BI Retained90d DAX measure, from the pre-computed per-customer
+    // retained_90d_raw flag (identical CTE logic to analysis/export_customer_facts.py):
+    //   - is_ordering_customer: order_count > 0
+    //   - eligible_90d: outcome is knowable -- either the customer already has a
+    //     literal 2nd order (order_count >= 2) or 90+ days have elapsed since their
+    //     first order. Customers who don't meet this are right-censored: excluded
+    //     from the retention denominator entirely, not counted as churned.
+    //   - retained_90d_raw: ANY delivered order strictly after the first order and
+    //     within 90 days of it (order_date > FirstOrder AND <= FirstOrder + 90) --
+    //     computed once in SQL/Python and shipped as-is, not re-derived here.
+    function computeKpis(rows) {
+      var orderingCustomers = 0;
+      var totalGmv = 0;
+      var eligibleCount = 0;
+      var retainedCount = 0;
+
+      rows.forEach(function (r) {
+        var orderCount = r.order_count;
+        if (orderCount > 0) {
+          orderingCustomers += 1;
+          totalGmv += r.net_gmv;
+
+          var firstOrderDate = new Date(r.first_order_date + "T00:00:00Z");
+          var daysSinceFirst = daysBetween(firstOrderDate, SNAPSHOT_DATE);
+          var eligible = orderCount >= 2 || daysSinceFirst >= 90;
+
+          if (eligible) {
+            eligibleCount += 1;
+            if (r.retained_90d_raw === 1) retainedCount += 1;
+          }
+        }
+      });
+
+      var retentionPct = eligibleCount ? (100 * retainedCount) / eligibleCount : null;
+      return {
+        orderingCustomers: orderingCustomers,
+        totalGmv: totalGmv,
+        eligibleCount: eligibleCount,
+        retainedCount: retainedCount,
+        retentionPct: retentionPct
+      };
+    }
+
+    function fmtInr(n) {
+      if (n >= 1e7) return "₹" + (n / 1e7).toFixed(2) + "Cr";
+      if (n >= 1e5) return "₹" + (n / 1e5).toFixed(2) + "L";
+      return "₹" + n.toLocaleString("en-IN", { maximumFractionDigits: 0 });
+    }
+
+    function renderAll() {
+      var filtered = getFiltered();
+      document.getElementById("filtered-count").textContent = filtered.length.toLocaleString();
+
+      // Only Retention % is segment-specific in the real .pbix -- GMV and Ordering
+      // Customers are deliberately NOT recomputed here (see the baseline set once
+      // in Papa.parse's complete callback above).
+      var k = computeKpis(filtered);
+      document.getElementById("kpi-retention").textContent = k.retentionPct === null ? "n/a" : k.retentionPct.toFixed(2) + "%";
+      document.getElementById("kpi-retention-sub").textContent = k.eligibleCount.toLocaleString() + " eligible, " + k.retainedCount.toLocaleString() + " retained";
+    }
+  })();
+  </script>
 </body>
 </html>
