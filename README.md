@@ -41,7 +41,6 @@ A focused retention case study for a fictional Indian food delivery platform —
 - **seaborn, matplotlib** — statistical visualizations and charts.
 - **Power BI Desktop** — executive dashboard and storytelling.
 - **pytest, ruff, GitHub Actions** — regression tests and CI.
-- **HTML/CSS/vanilla JavaScript, PapaParse** — the live GitHub Pages site, including a client-side interactive recomputation panel.
 
 **Note:** GitHub's language detector under-counts SQL/DAX due to file size — SQL and Power BI are core to this project. See `analysis/sql/` and the dashboard screenshots above.
 
